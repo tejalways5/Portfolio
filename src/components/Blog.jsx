@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const MEDIUM_FEED = "https://medium.com/feed/@suryatejatumu";
@@ -20,6 +20,7 @@ export default function Blog() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState(0); // 👈 new
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -64,7 +65,9 @@ export default function Blog() {
               title: it.title,
               link: it.link,
               pubDate: it.pubDate,
-              excerpt: (it.description || it.content || "").replace(/<[^>]*>/g, "").slice(0, 420),
+              excerpt: (it.description || it.content || "")
+                .replace(/<[^>]*>/g, "")
+                .slice(0, 420),
               image: extractImageFromContent(it.content || it.description || ""),
             }));
           if (mountedRef.current) {
@@ -88,27 +91,54 @@ export default function Blog() {
     if (active >= posts.length) setActive(Math.max(0, posts.length - 1));
   }, [posts, active]);
 
-  const prev = () => setActive((s) => (s - 1 + posts.length) % posts.length);
-  const next = () => setActive((s) => (s + 1) % posts.length);
+  const prev = () => {
+    setDirection(-1); // 👈 move backward
+    setActive((s) => (s - 1 + posts.length) % posts.length);
+  };
+
+  const next = () => {
+    setDirection(1); // 👈 move forward
+    setActive((s) => (s + 1) % posts.length);
+  };
 
   const swipeConfidenceThreshold = 100;
   const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
+
+  // Variants for directional animation
+  const variants = {
+    enter: (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
+  };
 
   return (
     <section id="posts" className="py-20 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-baseline justify-between mb-6">
-          <h2 className="text-3xl font-semibold text-primary">Blog</h2>
-          <p className="text-sm text-text/70">Latest posts — swipe or use controls.</p>
+        <div className="text-center mb-14">
+          <h2
+            className="text-4xl sm:text-5xl font-semibold tracking-tight 
+            bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] 
+            bg-clip-text text-transparent"
+          >
+            Blog
+          </h2>
+          <p className="text-sm text-text/70 mt-1">
+            Latest posts — swipe or use controls.
+          </p>
         </div>
 
-        {loading && <div className="text-sm text-text/60">Loading posts…</div>}
-        {err && <div className="text-sm text-red-500">{err}</div>}
+        {loading && (
+          <div className="text-center text-sm text-text/60">Loading posts…</div>
+        )}
+        {err && <div className="text-center text-sm text-red-500">{err}</div>}
 
         {!loading && posts.length > 0 && (
           <>
-            <div className="relative w-full overflow-hidden flex justify-center" style={{ height: "500px" }}>
+            <div
+              className="relative w-full max-w-5xl mx-auto overflow-hidden flex justify-center z-0"
+              style={{ height: "500px" }}
+            >
               {/* Prev / Next Buttons */}
               <button
                 aria-label="Previous post"
@@ -127,12 +157,21 @@ export default function Blog() {
               </button>
 
               {/* Cards viewport */}
-              <div className="relative w-full max-w-4xl">
-                <AnimatePresence initial={false} custom={active}>
+              <div className="relative w-full max-w-4xl mx-auto">
+                <AnimatePresence
+                  initial={false}
+                  custom={direction}
+                  mode="wait"
+                >
                   {posts.slice(active, active + 1).map((p) => (
                     <motion.article
                       key={p.link || active}
-                      custom={active}
+                      custom={direction}
+                      variants={variants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={{ type: "tween", ease: "easeInOut", duration: 0.6 }}
                       drag="x"
                       dragConstraints={{ left: 0, right: 0 }}
                       onDragEnd={(e, { offset, velocity }) => {
@@ -140,11 +179,7 @@ export default function Blog() {
                         if (swipe < -swipeConfidenceThreshold) next();
                         else if (swipe > swipeConfidenceThreshold) prev();
                       }}
-                      initial={{ x: "100%" }}
-                      animate={{ x: 0 }}
-                      exit={{ x: "-100%" }}
-                      transition={{ type: "tween", ease: "easeInOut", duration: 0.6 }}
-                      className="absolute top-0 left-0 w-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row h-[500px]"
+                      className="absolute top-0 left-0 w-full card card--elevated rounded-xl overflow-hidden flex flex-col md:flex-row h-[500px] z-0"
                     >
                       {/* Image */}
                       <div className="w-full md:w-1/2 h-[500px] md:h-full relative">
@@ -152,6 +187,7 @@ export default function Blog() {
                           <img
                             src={p.image}
                             alt={p.title}
+                            loading="lazy"
                             className="absolute inset-0 w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -161,9 +197,15 @@ export default function Blog() {
 
                       {/* Content */}
                       <div className="p-8 flex flex-col w-full md:w-1/2">
-                        <h3 className="text-2xl md:text-3xl font-semibold mb-4 line-clamp-2">{p.title}</h3>
-                        <span className="text-slate-800 text-sm mb-4">{new Date(p.pubDate).toLocaleDateString()}</span>
-                        <p className="text-sm mb-6 text-gray-500 line-clamp-6 overflow-hidden">{p.excerpt}…</p>
+                        <h3 className="text-2xl md:text-3xl font-semibold mb-4 line-clamp-2">
+                          {p.title}
+                        </h3>
+                        <span className="text-slate-800 text-sm mb-4">
+                          {new Date(p.pubDate).toLocaleDateString()}
+                        </span>
+                        <p className="text-sm mb-6 text-gray-500 line-clamp-6 overflow-hidden">
+                          {p.excerpt}…
+                        </p>
                         <div className="mt-auto flex justify-between items-center">
                           <a
                             href={p.link}
@@ -182,19 +224,21 @@ export default function Blog() {
               </div>
             </div>
 
-            {/* Dots moved below the cards */}
-           {/* Dots moved below the cards */}
-            <div className="flex justify-center mt-4">
-              <div className="flex items-center gap-2">
+            {/* Dots below */}
+            <div className="flex justify-center mt-6">
+              <div className="flex items-center gap-3">
                 {posts.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setActive(idx)}
+                    onClick={() => {
+                      setDirection(idx > active ? 1 : -1);
+                      setActive(idx);
+                    }}
                     aria-label={`Go to post ${idx + 1}`}
-                    className={`rounded-full transition-all duration-150 focus:outline-none ${
+                    className={`focus-ring btn-hit transition-colors duration-150 rounded-full ${
                       idx === active
-                        ? "bg-primary w-[6px] h-[6px] shadow-sm"
-                        : "bg-slate-300/70 w-[4px] h-[4px]"
+                        ? "dot dot--tiny dot--active"
+                        : "dot dot--tiny dot--inactive"
                     }`}
                   />
                 ))}
@@ -204,7 +248,7 @@ export default function Blog() {
         )}
 
         {!loading && posts.length === 0 && !err && (
-          <div className="text-sm text-text/60">No posts found.</div>
+          <div className="text-center text-sm text-text/60">No posts found.</div>
         )}
       </div>
     </section>

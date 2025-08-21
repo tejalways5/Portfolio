@@ -1,5 +1,3 @@
-<!-- ...existing code... -->
-
 # Surya Teja Tumu — Personal Portfolio (React + Vite)
 
 Minimal, responsive portfolio built with React + Vite. Features:
@@ -78,5 +76,3 @@ Minimal, responsive portfolio built with React + Vite. Features:
 
 ## License
 MIT — adapt as needed.
-
-<!-- ...existing code...

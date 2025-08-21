@@ -7,6 +7,7 @@ import Projects from "./components/Projects";
 import Contact from "./components/Contact";
 import Footer from "./components/Footer";
 import Blog from "./components/BLog";
+import Experience from "./components/Experience";
 
 const themes = [
   { 
@@ -74,6 +75,7 @@ export default function App() {
       />
       <Hero />
       <About />
+      <Experience />
       <Blog />
       <Projects />
       <Contact />

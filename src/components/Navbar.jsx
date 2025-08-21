@@ -2,10 +2,11 @@
 import { motion } from "framer-motion";
 import { Sun } from "lucide-react";
 
-// Smooth scroll helper (optional)
+// Smooth scroll helper
 const scrollToSection = (id) => {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  else window.scrollTo({ top: 0, behavior: "smooth" }); // fallback if no section
 };
 
 export default function Navbar({ switchTheme, currentThemeName }) {
@@ -14,12 +15,15 @@ export default function Navbar({ switchTheme, currentThemeName }) {
       initial={{ y: -60, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="fixed top-0 left-0 w-full bg-white z-50"
+      className="fixed top-0 left-0 w-full z-50 backdrop-blur-lg border-b border-border/40"
     >
-      <div className="flex items-center justify-between px-8 md:px-10 lg:px-48 h-16">
-        {/* Left: Name + Theme */}
+      <div className="flex items-center justify-between px-6 md:px-12 lg:px-40 h-16">
+        {/* Left: Name (click → scroll top) + Theme */}
         <div className="flex items-center gap-4">
-          <div className="text-xl font-semibold text-primary">
+          <div
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="font-semibold text-lg cursor-pointer hover:text-primary transition-colors"
+          >
             Surya Teja Tumu
           </div>
 
@@ -27,42 +31,31 @@ export default function Navbar({ switchTheme, currentThemeName }) {
             onClick={switchTheme}
             title="Change Theme"
             aria-label={`Change theme (current: ${currentThemeName || "default"})`}
-            className="p-2 rounded-full bg-white hover:bg-gray-200 transition-colors"
+            className="p-2 rounded-full border border-border/50 
+                       hover:scale-105 transition-transform duration-300"
           >
             <Sun className="w-5 h-5 text-primary" />
           </button>
         </div>
 
         {/* Right: Nav links */}
-        <div className="hidden md:flex gap-10 text-sm text-gray-600">
-          <a
-            href="#about"
-            onClick={() => scrollToSection("about")}
-            className="hover:text-primary text-slate-800 transition-colors"
-          >
-            About
-          </a>
-          <a
-            href="#experience"
-            onClick={() => scrollToSection("experience")}
-            className="hover:text-primary text-slate-800 transition-colors"
-          >
-            Experience
-          </a>
-          <a
-            href="#posts"
-            onClick={() => scrollToSection("posts")}
-            className="hover:text-primary text-slate-800 transition-colors"
-          >
-            Blog
-          </a>
-          <a
-            href="#projects"
-            onClick={() => scrollToSection("projects")}
-            className="hover:text-primary text-slate-800 transition-colors"
-          >
-            Projects
-          </a>
+        <div className="hidden md:flex gap-8 text-sm font-medium">
+          {[
+            { id: "about", label: "About" },
+            { id: "experience", label: "Experience" },
+            { id: "posts", label: "Blog" },
+            { id: "projects", label: "Projects" },
+          ].map((item) => (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              onClick={() => scrollToSection(item.id)}
+              className="relative text-text/80 hover:text-primary transition-colors"
+            >
+              {item.label}
+              <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] transition-all duration-300 group-hover:w-full"></span>
+            </a>
+          ))}
         </div>
       </div>
     </motion.nav>
